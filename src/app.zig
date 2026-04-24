@@ -9,7 +9,7 @@ pub fn appInit(_: ?*?*anyopaque, _: [][*:0]u8) !sdl.SDL_AppResult {
     }
 
     _ = sdl.SDL_CreateWindowAndRenderer(
-        "wrumz",
+        "wrum",
         1280,
         720,
         0,
