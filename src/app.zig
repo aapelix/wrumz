@@ -1,12 +1,22 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const sdl = @import("sdl.zig").c;
+
 const assets = @import("assets/load.zig");
+const stack = @import("stack.zig");
 
 var window: *sdl.SDL_Window = undefined;
 var renderer: *sdl.SDL_Renderer = undefined;
 var canvas: *sdl.SDL_Texture = undefined;
-var image: *sdl.SDL_Texture = undefined;
-var images: []*sdl.SDL_Texture = undefined;
+var s: stack.Stack = undefined;
+var rotation: f32 = 0;
+
+var last: u64 = undefined;
+
+const allocator = if (builtin.os.tag == .emscripten)
+    std.heap.c_allocator
+else
+    std.heap.page_allocator;
 
 const CANVAS_WIDTH: c_int = 320;
 const CANVAS_HEIGHT: c_int = 240;
@@ -36,36 +46,27 @@ pub fn appInit(_: ?*?*anyopaque, _: [][*:0]u8) !sdl.SDL_AppResult {
     _ = sdl.SDL_SetTextureScaleMode(canvas, sdl.SDL_SCALEMODE_NEAREST);
     _ = sdl.SDL_SetTextureBlendMode(canvas, sdl.SDL_BLENDMODE_NONE);
 
-    image = assets.load(renderer, "assets/cars/img_1.png");
-    _ = sdl.SDL_SetTextureScaleMode(image, sdl.SDL_SCALEMODE_NEAREST);
+    last = sdl.SDL_GetPerformanceCounter();
 
-    images = try assets.loadFolder(renderer, "assets/cars");
+    s = try stack.Stack.init(allocator, renderer, "assets/cars", 6);
 
     return sdl.SDL_APP_CONTINUE;
 }
 
 pub fn appIterate(_: ?*anyopaque) !sdl.SDL_AppResult {
+    const now = sdl.SDL_GetPerformanceCounter();
+    const dt =
+        @as(f32, @floatFromInt(now - last)) /
+        @as(f32, @floatFromInt(sdl.SDL_GetPerformanceFrequency()));
+    last = now;
+
+    rotation += 45 * dt;
+
     _ = sdl.SDL_SetRenderTarget(renderer, canvas);
     _ = sdl.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     _ = sdl.SDL_RenderClear(renderer);
 
-    const img_dst_rect = sdl.SDL_FRect{
-        .x = 100,
-        .y = 100,
-        .w = 10,
-        .h = 17,
-    };
-    _ = sdl.SDL_RenderTexture(renderer, image, null, &img_dst_rect);
-
-    for (images, 0..) |img, i| {
-        const dst_rect = sdl.SDL_FRect{
-            .x = 100,
-            .y = 150 - @as(f32, @floatFromInt(i)),
-            .w = 10,
-            .h = 17,
-        };
-        _ = sdl.SDL_RenderTexture(renderer, img, null, &dst_rect);
-    }
+    s.draw(renderer, [2]f32{ 100, 100 }, rotation);
 
     _ = sdl.SDL_SetRenderTarget(renderer, null);
     _ = sdl.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -104,7 +105,8 @@ pub fn appEvent(_: ?*anyopaque, event: *sdl.SDL_Event) !sdl.SDL_AppResult {
 }
 
 pub fn appQuit(_: ?*anyopaque, _: anyerror!sdl.SDL_AppResult) void {
-    sdl.SDL_DestroyTexture(image);
+    s.deinit(allocator);
+
     sdl.SDL_DestroyTexture(canvas);
     sdl.SDL_DestroyRenderer(renderer);
     sdl.SDL_DestroyWindow(window);

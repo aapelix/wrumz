@@ -9,27 +9,23 @@ pub fn load(renderer: *sdl.SDL_Renderer, path: [*:0]const u8) *sdl.SDL_Texture {
 
     defer sdl.SDL_DestroySurface(image);
 
-    return sdl.SDL_CreateTextureFromSurface(renderer, image);
+    const texture = sdl.SDL_CreateTextureFromSurface(renderer, image);
+    _ = sdl.SDL_SetTextureScaleMode(texture, sdl.SDL_SCALEMODE_NEAREST);
+
+    return texture;
 }
 
-pub fn loadFolder(renderer: *sdl.SDL_Renderer, path: []const u8) ![]*sdl.SDL_Texture {
-    var textures: std.ArrayList(*sdl.SDL_Texture) = .empty;
+pub fn loadFolder(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, path: []const u8, count: usize) !std.ArrayList(*sdl.SDL_Texture) {
+    var textures: std.ArrayList(*sdl.SDL_Texture) = try .initCapacity(allocator, count + 1);
 
-    var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
-    defer dir.close();
+    for (0..count) |i| {
+        var buf: [256]u8 = undefined;
+        const file_path = try std.fmt.bufPrintZ(&buf, "{s}/img_{d}.png", .{ path, i + 1 });
 
-    var iter = dir.iterate();
-
-    while (try iter.next()) |entry| {
-        if (entry.kind == .file) {
-            const file_path = std.fs.path.joinZ(std.heap.page_allocator, &.{ path, entry.name }) catch {
-                @panic("failed to join path");
-            };
-
-            const texture = load(renderer, file_path);
-            try textures.append(std.heap.page_allocator, texture);
-        }
+        const texture = load(renderer, file_path);
+        _ = sdl.SDL_SetTextureScaleMode(texture, sdl.SDL_SCALEMODE_NEAREST);
+        try textures.append(allocator, texture);
     }
 
-    return textures.toOwnedSlice(std.heap.page_allocator);
+    return textures;
 }
