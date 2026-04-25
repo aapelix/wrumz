@@ -20,13 +20,7 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    const sdl_dep = b.dependency("sdl", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    const sdl_lib = sdl_dep.artifact("SDL3");
-
-    exe.root_module.linkLibrary(sdl_lib);
+    exe.root_module.linkSystemLibrary("SDL3", .{});
 
     b.installArtifact(exe);
 
@@ -70,17 +64,6 @@ pub fn buildWasm(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
         b.sysroot = sysroot;
     }
 
-    const lto: ?std.zig.LtoMode = if (optimize != .Debug) .full else null;
-
-    const sdl_dep = b.dependency("sdl", .{
-        .target = target,
-        .optimize = optimize,
-        .lto = lto,
-    });
-
-    const sdl_lib = sdl_dep.artifact("SDL3");
-    mod.linkLibrary(sdl_lib);
-
     const run_emcc = b.addSystemCommand(&.{"emcc"});
 
     for (lib.getCompileDependencies(false)) |l| {
@@ -88,6 +71,11 @@ pub fn buildWasm(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
             run_emcc.addArtifactArg(l);
         }
     }
+
+    run_emcc.addArgs(&.{
+        "--use-port=sdl3",
+        "--preload-file=assets@assets",
+    });
 
     if (target.result.cpu.arch == .wasm64) {
         run_emcc.addArg("-sMEMORY64");

@@ -21,15 +21,15 @@ fn sdlMain(argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c) c_int {
 }
 
 fn appInitC(appstate: ?*?*anyopaque, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c) sdl.SDL_AppResult {
-    return app.appInit(appstate.?, @ptrCast(argv.?[0..@intCast(argc)])) catch sdl.SDL_APP_ERROR;
+    return app.appInit(appstate.?, @ptrCast(argv.?[0..@intCast(argc)])) catch sdl.SDL_APP_FAILURE;
 }
 
 fn appIterateC(appstate: ?*anyopaque) callconv(.c) sdl.SDL_AppResult {
-    return app.appIterate(appstate) catch sdl.SDL_APP_ERROR;
+    return app.appIterate(appstate) catch sdl.SDL_APP_FAILURE;
 }
 
 fn appEventC(appstate: ?*anyopaque, event: ?*sdl.SDL_Event) callconv(.c) sdl.SDL_AppResult {
-    return app.appEvent(appstate, event.?) catch sdl.SDL_APP_ERROR;
+    return app.appEvent(appstate, event.?) catch sdl.SDL_APP_FAILURE;
 }
 
 fn appQuitC(appstate: ?*anyopaque, result: sdl.SDL_AppResult) callconv(.c) void {
