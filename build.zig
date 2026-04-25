@@ -20,6 +20,7 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    exe.root_module.linkSystemLibrary("libwebsockets", .{});
     exe.root_module.linkSystemLibrary("SDL3", .{});
 
     b.installArtifact(exe);
@@ -75,6 +76,7 @@ pub fn buildWasm(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
     run_emcc.addArgs(&.{
         "--use-port=sdl3",
         "--preload-file=assets@assets",
+        "-lwebsocket.js",
     });
 
     if (target.result.cpu.arch == .wasm64) {

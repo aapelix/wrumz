@@ -1,5 +1,5 @@
 const std = @import("std");
-const sdl = @import("sdl.zig").c;
+const sdl = @import("c.zig").c;
 const assets = @import("assets/load.zig");
 
 pub const Stack = struct {

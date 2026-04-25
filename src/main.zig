@@ -1,4 +1,4 @@
-const sdl = @import("sdl.zig").c;
+const sdl = @import("c.zig").c;
 const app = @import("app.zig");
 
 pub fn main() !u8 {
