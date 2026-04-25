@@ -1,14 +1,16 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+const Message = @import("msg").Message;
+
 const c = @import("c.zig").c;
 
 const assets = @import("assets/load.zig");
 const stack = @import("stack.zig");
 const socket = @import("net/socket.zig");
 
-fn onWsMessage(msg: []const u8) void {
-    std.debug.print("got: {s}\n", .{msg});
+fn onWsMessage(m: Message) void {
+    std.debug.print("got: {any}\n", .{m});
 }
 
 var window: *c.SDL_Window = undefined;
@@ -116,7 +118,7 @@ pub fn appEvent(_: ?*anyopaque, event: *c.SDL_Event) !c.SDL_AppResult {
 
     if (event.type == c.SDL_EVENT_KEY_DOWN) {
         if (event.key.key == c.SDL_GetKeyFromName("a")) {
-            try socket.send("hello");
+            try socket.send(.{ .ping = .{ .username = "Aaro" } });
         }
     }
     return c.SDL_APP_CONTINUE;

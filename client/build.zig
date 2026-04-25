@@ -20,6 +20,11 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    const msg_dep = b.dependency("msg", .{});
+
+    const msg_mod = msg_dep.module("msg");
+
+    exe.root_module.addImport("msg", msg_mod);
     exe.root_module.linkSystemLibrary("libwebsockets", .{});
     exe.root_module.linkSystemLibrary("SDL3", .{});
 
