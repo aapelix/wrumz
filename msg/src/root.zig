@@ -5,7 +5,7 @@ pub const ClientJoinLobby = struct { id: u32 };
 pub const ClientCreateLobby = struct {};
 
 // sent by server
-const ServerPlayer = struct {
+pub const ServerPlayer = struct {
     id: u32,
     x: f32,
     y: f32,

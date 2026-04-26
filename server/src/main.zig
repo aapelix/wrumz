@@ -24,7 +24,7 @@ pub fn main() !void {
     lobby.initLobbyManager(allocator);
     defer lobby.deinitLobbyManager();
 
-    const sim_thread = try std.Thread.spawn(.{}, loop.loop, .{});
+    const sim_thread = try std.Thread.spawn(.{}, loop.loop, .{allocator});
     sim_thread.detach();
     defer sim_thread.join();
 
