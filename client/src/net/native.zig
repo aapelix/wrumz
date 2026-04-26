@@ -44,7 +44,7 @@ const protocols = [_]c.lws_protocols{
     .{ .name = null, .callback = null, .per_session_data_size = 0, .rx_buffer_size = 0 },
 };
 
-pub fn init(address: [*c]const u8, port: c_int) void {
+pub fn init(address: [*c]const u8, port: c_int, path: [*c]const u8) void {
     var info: c.lws_context_creation_info = std.mem.zeroes(c.lws_context_creation_info);
     info.port = c.CONTEXT_PORT_NO_LISTEN;
     info.protocols = &protocols;
@@ -55,7 +55,7 @@ pub fn init(address: [*c]const u8, port: c_int) void {
     client.context = ws_context;
     client.address = address;
     client.port = port;
-    client.path = "/ws";
+    client.path = path;
     client.host = client.address;
     client.origin = client.address;
     client.protocol = protocols[0].name;

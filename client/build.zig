@@ -65,6 +65,10 @@ pub fn buildWasm(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
         .root_module = mod,
     });
 
+    const msg_dep = b.dependency("msg", .{});
+    const msg_mod = msg_dep.module("msg");
+    lib.root_module.addImport("msg", msg_mod);
+
     if (b.sysroot) |sysroot| {
         mod.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{ sysroot, "include" }) });
         b.sysroot = sysroot;

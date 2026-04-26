@@ -10,11 +10,16 @@ else
 pub const MessageCallback = *const fn (msg: Message) void;
 var on_message: ?MessageCallback = null;
 
+const allocator = if (builtin.os.tag == .emscripten)
+    std.heap.c_allocator
+else
+    std.heap.page_allocator;
+
 fn onMessage(msg: []const u8) void {
     if (on_message) |cb| {
         var fbs = std.io.fixedBufferStream(msg);
-        const decoded = Message.decode(fbs.reader()) catch {
-            std.debug.print("failed to decode message", .{});
+        const decoded = Message.decode(allocator, fbs.reader()) catch |err| {
+            std.debug.print("failed to decode message: {any}\n", .{err});
             return;
         };
 
@@ -24,15 +29,22 @@ fn onMessage(msg: []const u8) void {
 
 pub fn setMessageCallback(cb: MessageCallback) void {
     on_message = cb;
+    std.debug.print("setting message callback {any}\n", .{cb});
 
     sock.setMessageCallback(onMessage);
 }
 
-pub fn init(address: [*c]const u8, port: c_int, url: []const u8) void {
+pub fn init(address: [:0]const u8, port: c_int, path: [:0]const u8, protocol: [:0]const u8) !void {
     if (builtin.os.tag == .emscripten) {
+        var buf: [1024]u8 = undefined;
+        const url = try std.fmt.bufPrintZ(
+            &buf,
+            "{s}://{s}:{d}{s}",
+            .{ protocol, address, port, path },
+        );
         sock.init(url);
     } else {
-        sock.init(address, port);
+        sock.init(@ptrCast(address), port, @ptrCast(path));
     }
 }
 

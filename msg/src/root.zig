@@ -16,13 +16,13 @@ pub const Message = union(enum) {
             },
         }
     }
-    pub fn decode(reader: anytype) !Message {
+    pub fn decode(allocator: std.mem.Allocator, reader: anytype) !Message {
         const tag = try reader.readByte();
         const Tag = std.meta.Tag(Message);
 
         return switch (@as(Tag, @enumFromInt(tag))) {
             .ping => Message{
-                .ping = try decodeValue(reader, Ping),
+                .ping = try decodeValue(allocator, reader, Ping),
             },
         };
     }
@@ -53,14 +53,14 @@ fn encodeValue(writer: anytype, value: anytype) !void {
     }
 }
 
-fn decodeValue(reader: anytype, comptime T: type) !T {
+fn decodeValue(allocator: std.mem.Allocator, reader: anytype, comptime T: type) !T {
     switch (@typeInfo(T)) {
         .int => return try reader.readInt(T, .big),
 
         .pointer => |p| {
             if (p.size == .slice and p.child == u8) {
                 const len = try reader.readInt(u16, .big);
-                const buf = try std.heap.page_allocator.alloc(u8, len);
+                const buf = try allocator.alloc(u8, len);
                 try reader.readNoEof(buf);
                 return buf;
             } else {
@@ -71,7 +71,7 @@ fn decodeValue(reader: anytype, comptime T: type) !T {
         .@"struct" => {
             var out: T = undefined;
             inline for (@typeInfo(T).@"struct".fields) |field| {
-                @field(out, field.name) = try decodeValue(reader, field.type);
+                @field(out, field.name) = try decodeValue(allocator, reader, field.type);
             }
             return out;
         },

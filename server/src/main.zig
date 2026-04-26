@@ -12,13 +12,13 @@ pub const std_options = std.Options{ .log_scope_levels = &[_]std.log.ScopeLevel{
     .{ .scope = .websocket, .level = .err },
 } };
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
-    const allocator = gpa.allocator();
-
-    var server = try httpz.Server(Handler).init(allocator, .{ .address = .localhost(PORT) }, Handler{});
+    var server = try httpz.Server(Handler).init(allocator, .{ .address = .all(23901) }, Handler{});
     defer server.deinit();
     defer server.stop();
 
@@ -26,7 +26,7 @@ pub fn main() !void {
 
     router.get("/ws", ws, .{});
 
-    std.debug.print("running on localhost:{d}\n", .{PORT});
+    std.debug.print("running on {d}\n", .{PORT});
     try server.listen();
 }
 
@@ -55,7 +55,7 @@ const Client = struct {
 
     pub fn clientMessage(self: *Client, data: []const u8) !void {
         var fbs = std.io.fixedBufferStream(data);
-        const decoded = Message.decode(fbs.reader()) catch {
+        const decoded = Message.decode(allocator, fbs.reader()) catch {
             std.debug.print("failed to decode message", .{});
             return;
         };

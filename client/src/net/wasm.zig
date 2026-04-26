@@ -31,7 +31,7 @@ fn onMessage(
     _ = event_type;
     _ = user_data;
     if (event.*.isText == true) {
-        const text = event.*.data[0..event.*.numBytes];
+        const text = event.*.data[0 .. event.*.numBytes - 1];
         if (on_message) |cb| {
             cb(text);
         }
@@ -49,12 +49,12 @@ pub fn send(data: []const u8) !void {
     );
 }
 
-pub fn init(url: []const u8) void {
+pub fn init(url: [:0]const u8) void {
     var attrs: c.EmscriptenWebSocketCreateAttributes = undefined;
 
     attrs = std.mem.zeroes(c.EmscriptenWebSocketCreateAttributes);
     attrs.url = url.ptr;
-    attrs.protocols = "binary";
+    attrs.protocols = null;
     attrs.createOnMainThread = true;
 
     socket_handle = c.emscripten_websocket_new(&attrs);

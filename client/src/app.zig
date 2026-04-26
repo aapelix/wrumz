@@ -10,6 +10,7 @@ const stack = @import("stack.zig");
 const socket = @import("net/socket.zig");
 
 fn onWsMessage(m: Message) void {
+    rotation = 0;
     std.debug.print("got: {any}\n", .{m});
 }
 
@@ -58,7 +59,7 @@ pub fn appInit(_: ?*?*anyopaque, _: [][*:0]u8) !c.SDL_AppResult {
 
     s = try stack.Stack.init(allocator, renderer, "assets/cars", 6);
 
-    socket.init("localhost", 23901, "ws://localhost:23901/ws");
+    try socket.init("127.0.0.1", 23901, "/ws", "ws");
 
     socket.setMessageCallback(onWsMessage);
 
