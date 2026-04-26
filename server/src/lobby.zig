@@ -44,13 +44,13 @@ pub const Lobby = struct {
 
     pub fn broadcast(self: *Lobby, msg: Message) !void {
         var buf: [1024]u8 = undefined;
-        const fbs = std.io.fixedBufferStream(&buf);
+        var fbs = std.io.fixedBufferStream(&buf);
         try msg.encode(fbs.writer());
 
         var it = self.players.iterator();
         while (it.next()) |entry| {
             const client = entry.value_ptr.*;
-            try client.send(msg);
+            try client.client.send(msg);
         }
     }
 

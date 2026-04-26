@@ -22,15 +22,15 @@ pub fn loop(allocator: std.mem.Allocator) !void {
 
             // update game state here
 
-            var update_players: std.ArrayList(*msg.ServerPlayer) = try .initCapacity(allocator, l.players.count());
+            var update_players: std.ArrayList(msg.ServerPlayer) = try .initCapacity(allocator, l.players.count());
             var it2 = l.players.iterator();
             while (it2.next()) |e| {
                 const p = e.value_ptr.*;
-                try update_players.append(allocator, .{ .x = p.player.x, .y = p.player.y, .rotation = p.player.rotation, .id = e.key });
+                try update_players.append(allocator, msg.ServerPlayer{ .x = p.player.x, .y = p.player.y, .rotation = p.player.rotation, .id = e.key_ptr.* });
             }
 
             const update_msg = msg.Message{
-                .serverLobbyUpdate = .{ .players = update_players.toSlice() },
+                .serverLobbyUpdate = .{ .players = try update_players.toOwnedSlice(allocator) },
             };
 
             try l.broadcast(update_msg);
