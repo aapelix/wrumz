@@ -3,6 +3,10 @@ const std = @import("std");
 // sent by client
 pub const ClientJoinLobby = struct { id: u32 };
 pub const ClientCreateLobby = struct {};
+pub const ClientInput = struct {
+    throttle: i8,
+    steering: i8,
+};
 
 // sent by server
 pub const ServerPlayer = struct {
@@ -19,6 +23,7 @@ pub const Message = union(enum) {
     clientJoinLobby: ClientJoinLobby,
     clientCreateLobby: ClientCreateLobby,
     serverLobbyUpdate: ServerLobbyUpdate,
+    clientInput: ClientInput,
 
     pub fn encode(msg: Message, writer: anytype) !void {
         try writer.writeByte(@intFromEnum(msg));
@@ -39,6 +44,9 @@ pub const Message = union(enum) {
             },
             .clientCreateLobby => Message{
                 .clientCreateLobby = try decodeValue(allocator, reader, ClientCreateLobby),
+            },
+            .clientInput => Message{
+                .clientInput = try decodeValue(allocator, reader, ClientInput),
             },
             .serverLobbyUpdate => Message{
                 .serverLobbyUpdate = try decodeValue(allocator, reader, ServerLobbyUpdate),

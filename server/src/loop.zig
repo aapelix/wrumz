@@ -4,8 +4,16 @@ const msg = @import("msg");
 const lobby = @import("lobby.zig");
 
 pub fn loop(allocator: std.mem.Allocator) !void {
+    var last = std.time.milliTimestamp();
+
     while (true) {
         std.Thread.sleep(16 * std.time.ns_per_ms);
+
+        const now = std.time.milliTimestamp();
+        const dt_ms = now - last;
+        last = now;
+
+        const dt: f32 = @as(f32, @floatFromInt(dt_ms)) / 1000.0;
 
         lobby.lobby_manager.lock.lock();
         defer lobby.lobby_manager.lock.unlock();
@@ -20,7 +28,12 @@ pub fn loop(allocator: std.mem.Allocator) !void {
                 _ = lobby.lobby_manager.lobbies.remove(l.id);
             }
 
-            // update game state here
+            var update_it = l.players.iterator();
+            while (update_it.next()) |e| {
+                const p = e.value_ptr.*;
+
+                p.player.update(dt);
+            }
 
             var update_players: std.ArrayList(msg.ServerPlayer) = try .initCapacity(allocator, l.players.count());
             var it2 = l.players.iterator();

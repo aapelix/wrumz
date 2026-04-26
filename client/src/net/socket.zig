@@ -7,7 +7,7 @@ const sock = if (builtin.os.tag == .emscripten)
 else
     @import("native.zig");
 
-pub const MessageCallback = *const fn (msg: Message) void;
+pub const MessageCallback = *const fn (msg: Message) anyerror!void;
 var on_message: ?MessageCallback = null;
 
 const allocator = if (builtin.os.tag == .emscripten)
@@ -23,7 +23,9 @@ fn onMessage(msg: []const u8) void {
             return;
         };
 
-        cb(decoded);
+        cb(decoded) catch |err| {
+            std.debug.print("failed to handle message: {any}\n", .{err});
+        };
     }
 }
 

@@ -1,0 +1,92 @@
+const std = @import("std");
+const Message = @import("msg").Message;
+
+const Car = @import("../entity/car.zig").Car;
+const c = @import("../c.zig").c;
+const socket = @import("../net/socket.zig");
+
+pub const GameScene = struct {
+    cars: std.AutoHashMap(u32, Car),
+
+    last_throttle: i8,
+    last_steering: i8,
+
+    pub fn init(allocator: std.mem.Allocator) !GameScene {
+        const cars: std.AutoHashMap(u32, Car) = .init(allocator);
+
+        return GameScene{
+            .cars = cars,
+            .last_throttle = 0,
+            .last_steering = 0,
+        };
+    }
+
+    pub fn update(self: *GameScene, dt: f32) !void {
+        _ = dt;
+
+        const state = c.SDL_GetKeyboardState(null);
+        const throttle: i8 = if (state[c.SDL_SCANCODE_W]) 1 else if (state[c.SDL_SCANCODE_S]) -1 else 0;
+        const steering: i8 = if (state[c.SDL_SCANCODE_A]) -1 else if (state[c.SDL_SCANCODE_D]) 1 else 0;
+
+        if (throttle != self.last_throttle or steering != self.last_steering) {
+            self.last_throttle = throttle;
+            self.last_steering = steering;
+
+            const msg = Message{ .clientInput = .{ .throttle = throttle, .steering = steering } };
+            try socket.send(msg);
+        }
+    }
+
+    pub fn handleMsg(self: *GameScene, allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, msg: Message) !void {
+        switch (msg) {
+            .serverLobbyUpdate => |state| {
+                for (state.players) |player| {
+                    if (!self.cars.contains(player.id)) {
+                        const new_car = try Car.init(allocator, renderer, [_]f32{ player.x, player.y }, player.rotation);
+                        _ = try self.cars.put(player.id, new_car);
+                    }
+                }
+
+                var it = self.cars.iterator();
+                while (it.next()) |entry| {
+                    const id = entry.key_ptr.*;
+                    var car = entry.value_ptr;
+
+                    var found = false;
+                    for (state.players) |player| {
+                        if (player.id == id) {
+                            car.pos = [_]f32{ player.x, player.y };
+                            car.rotation = player.rotation;
+                            std.debug.print("Updated car {} to ({}, {}) with rotation {}\n", .{ id, player.x, player.y, player.rotation });
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        var delete_car = entry.value_ptr;
+                        delete_car.deinit(allocator);
+                        _ = self.cars.remove(id);
+                    }
+                }
+            },
+            else => {},
+        }
+    }
+
+    pub fn draw(self: *GameScene, renderer: *c.SDL_Renderer) void {
+        var it = self.cars.iterator();
+        while (it.next()) |entry| {
+            const car = entry.value_ptr.*;
+            car.draw(renderer);
+        }
+    }
+
+    pub fn deinit(self: *GameScene, allocator: std.mem.Allocator) void {
+        var it = self.cars.iterator();
+        while (it.next()) |entry| {
+            const car = entry.value_ptr;
+            car.deinit(allocator);
+        }
+        self.cars.deinit();
+    }
+};

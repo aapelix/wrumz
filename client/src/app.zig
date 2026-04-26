@@ -6,19 +6,18 @@ const Message = @import("msg").Message;
 const c = @import("c.zig").c;
 
 const assets = @import("assets/load.zig");
-const stack = @import("stack.zig");
 const socket = @import("net/socket.zig");
+const scene = @import("scene/type.zig");
 
-fn onWsMessage(m: Message) void {
-    rotation = 0;
-    std.debug.print("got: {any}\n", .{m});
+fn onWsMessage(m: Message) !void {
+    try manager.handleMsg(allocator, renderer, m);
 }
 
 var window: *c.SDL_Window = undefined;
 var renderer: *c.SDL_Renderer = undefined;
 var canvas: *c.SDL_Texture = undefined;
-var s: stack.Stack = undefined;
-var rotation: f32 = 0;
+
+var manager: scene.SceneManager = undefined;
 
 var last: u64 = undefined;
 
@@ -57,11 +56,11 @@ pub fn appInit(_: ?*?*anyopaque, _: [][*:0]u8) !c.SDL_AppResult {
 
     last = c.SDL_GetPerformanceCounter();
 
-    s = try stack.Stack.init(allocator, renderer, "assets/cars", 6);
-
     try socket.init("127.0.0.1", 23901, "/ws", "ws");
 
     socket.setMessageCallback(onWsMessage);
+
+    manager = scene.SceneManager{ .current = .{ .game = try scene.GameScene.init(allocator) } };
 
     return c.SDL_APP_CONTINUE;
 }
@@ -75,13 +74,13 @@ pub fn appIterate(_: ?*anyopaque) !c.SDL_AppResult {
         @as(f32, @floatFromInt(c.SDL_GetPerformanceFrequency()));
     last = now;
 
-    rotation += 45 * dt;
+    try manager.update(dt);
 
     _ = c.SDL_SetRenderTarget(renderer, canvas);
     _ = c.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     _ = c.SDL_RenderClear(renderer);
 
-    s.draw(renderer, [2]f32{ 100, 100 }, rotation);
+    manager.draw(renderer);
 
     _ = c.SDL_SetRenderTarget(renderer, null);
     _ = c.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -118,7 +117,7 @@ pub fn appEvent(_: ?*anyopaque, event: *c.SDL_Event) !c.SDL_AppResult {
     }
 
     if (event.type == c.SDL_EVENT_KEY_DOWN) {
-        if (event.key.key == c.SDL_GetKeyFromName("a")) {
+        if (event.key.key == c.SDL_GetKeyFromName("b")) {
             try socket.send(.{ .clientCreateLobby = .{} });
         }
     }
@@ -126,7 +125,7 @@ pub fn appEvent(_: ?*anyopaque, event: *c.SDL_Event) !c.SDL_AppResult {
 }
 
 pub fn appQuit(_: ?*anyopaque, _: anyerror!c.SDL_AppResult) void {
-    s.deinit(allocator);
+    manager.deinit(allocator);
 
     c.SDL_DestroyTexture(canvas);
     c.SDL_DestroyRenderer(renderer);

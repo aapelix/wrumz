@@ -55,6 +55,18 @@ pub const Client = struct {
                 var p = Player{ .x = 0, .y = 0, .rotation = 0 };
                 try l.players.put(self.user_id, .init(&p, self));
             },
+            .clientInput => |input| {
+                if (self.lobby == null) return;
+
+                lobby.lobby_manager.lock.lock();
+                defer lobby.lobby_manager.lock.unlock();
+
+                const l = self.lobby.?;
+                const player = l.players.get(self.user_id) orelse return;
+                player.player.throttle = input.throttle;
+                player.player.steering = input.steering;
+                std.debug.print("Received input from user {}: throttle {}, steering {}\n", .{ self.user_id, input.throttle, input.steering });
+            },
             else => {},
         }
     }
