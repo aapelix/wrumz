@@ -1,9 +1,12 @@
 const std = @import("std");
 const httpz = @import("httpz");
-
 const websocket = httpz.websocket;
 
 const Message = @import("msg").Message;
+
+const Client = @import("client.zig").Client;
+const lobby = @import("lobby.zig");
+const loop = @import("loop.zig");
 
 const Allocator = std.mem.Allocator;
 const PORT = 23901;
@@ -17,6 +20,13 @@ const allocator = gpa.allocator();
 
 pub fn main() !void {
     defer _ = gpa.deinit();
+
+    lobby.initLobbyManager(allocator);
+    defer lobby.deinitLobbyManager();
+
+    const sim_thread = try std.Thread.spawn(.{}, loop.loop, .{});
+    sim_thread.detach();
+    defer sim_thread.join();
 
     var server = try httpz.Server(Handler).init(allocator, .{ .address = .all(23901) }, Handler{});
     defer server.deinit();
@@ -32,52 +42,6 @@ pub fn main() !void {
 
 const Handler = struct {
     pub const WebsocketHandler = Client;
-};
-
-const Client = struct {
-    user_id: u32,
-    conn: *websocket.Conn,
-
-    const Context = struct {
-        user_id: u32,
-    };
-
-    pub fn init(conn: *websocket.Conn, ctx: *const Context) !Client {
-        return .{
-            .conn = conn,
-            .user_id = ctx.user_id,
-        };
-    }
-
-    pub fn afterInit(self: *Client) !void {
-        _ = self;
-    }
-
-    pub fn clientMessage(self: *Client, data: []const u8) !void {
-        var fbs = std.io.fixedBufferStream(data);
-        const decoded = Message.decode(allocator, fbs.reader()) catch {
-            std.debug.print("failed to decode message", .{});
-            return;
-        };
-        switch (decoded) {
-            .ping => |p| {
-                std.debug.print("got ping from: {s}\n", .{p.username});
-            },
-        }
-        return self.conn.write(data);
-    }
-
-    pub fn send(self: *Client, msg: Message) !void {
-        var buf: [1024]u8 = undefined;
-        var fbs = std.io.fixedBufferStream(&buf);
-
-        try msg.encode(fbs.writer());
-
-        const written = fbs.pos;
-        const bytes = buf[0..written];
-
-        return self.conn.write(bytes);
-    }
 };
 
 fn ws(_: Handler, req: *httpz.Request, res: *httpz.Response) !void {

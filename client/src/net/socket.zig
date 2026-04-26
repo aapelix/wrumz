@@ -29,7 +29,6 @@ fn onMessage(msg: []const u8) void {
 
 pub fn setMessageCallback(cb: MessageCallback) void {
     on_message = cb;
-    std.debug.print("setting message callback {any}\n", .{cb});
 
     sock.setMessageCallback(onMessage);
 }

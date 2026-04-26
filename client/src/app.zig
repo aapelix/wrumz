@@ -119,7 +119,7 @@ pub fn appEvent(_: ?*anyopaque, event: *c.SDL_Event) !c.SDL_AppResult {
 
     if (event.type == c.SDL_EVENT_KEY_DOWN) {
         if (event.key.key == c.SDL_GetKeyFromName("a")) {
-            try socket.send(.{ .ping = .{ .username = "Aaro" } });
+            try socket.send(.{ .clientCreateLobby = .{} });
         }
     }
     return c.SDL_APP_CONTINUE;
