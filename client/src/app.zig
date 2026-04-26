@@ -58,7 +58,7 @@ pub fn appInit(_: ?*?*anyopaque, _: [][*:0]u8) !c.SDL_AppResult {
 
     s = try stack.Stack.init(allocator, renderer, "assets/cars", 6);
 
-    socket.init("localhost", 8080, "ws://localhost:8080");
+    socket.init("localhost", 23901, "ws://localhost:23901/ws");
 
     socket.setMessageCallback(onWsMessage);
 

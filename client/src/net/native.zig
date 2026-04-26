@@ -55,7 +55,7 @@ pub fn init(address: [*c]const u8, port: c_int) void {
     client.context = ws_context;
     client.address = address;
     client.port = port;
-    client.path = "/";
+    client.path = "/ws";
     client.host = client.address;
     client.origin = client.address;
     client.protocol = protocols[0].name;
