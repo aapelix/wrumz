@@ -11,6 +11,8 @@ const loop = @import("loop.zig");
 const Allocator = std.mem.Allocator;
 const PORT = 23901;
 
+var next_user_id: u32 = 1;
+
 pub const std_options = std.Options{ .log_scope_levels = &[_]std.log.ScopeLevel{
     .{ .scope = .websocket, .level = .err },
 } };
@@ -45,7 +47,8 @@ const Handler = struct {
 };
 
 fn ws(_: Handler, req: *httpz.Request, res: *httpz.Response) !void {
-    const ctx = Client.Context{ .user_id = 1 };
+    const ctx = Client.Context{ .user_id = next_user_id };
+    next_user_id += 1;
 
     if (try httpz.upgradeWebsocket(Client, req, res, &ctx) == false) {
         res.status = 400;

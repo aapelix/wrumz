@@ -40,8 +40,9 @@ pub const Client = struct {
                 self.lobby = l;
 
                 const id = self.user_id;
-                var p = Player{ .x = 0, .y = 0, .rotation = 0 };
-                try l.players.put(id, .init(&p, self));
+                const p = Player{ .x = 0, .y = 0, .rotation = 0 };
+                try l.players.put(id, .init(p, self));
+                std.debug.print("User {} created lobby {}\n", .{ self.user_id, l.id });
             },
             .clientJoinLobby => |msg| {
                 if (self.lobby != null) return;
@@ -52,8 +53,8 @@ pub const Client = struct {
                 const l = lobby.lobby_manager.get(msg.id) orelse return;
                 self.lobby = l;
 
-                var p = Player{ .x = 0, .y = 0, .rotation = 0 };
-                try l.players.put(self.user_id, .init(&p, self));
+                const p = Player{ .x = 0, .y = 0, .rotation = 0 };
+                try l.players.put(self.user_id, .init(p, self));
             },
             .clientInput => |input| {
                 if (self.lobby == null) return;
@@ -62,10 +63,9 @@ pub const Client = struct {
                 defer lobby.lobby_manager.lock.unlock();
 
                 const l = self.lobby.?;
-                const player = l.players.get(self.user_id) orelse return;
+                var player = l.players.getPtr(self.user_id) orelse return;
                 player.player.throttle = input.throttle;
                 player.player.steering = input.steering;
-                std.debug.print("Received input from user {}: throttle {}, steering {}\n", .{ self.user_id, input.throttle, input.steering });
             },
             else => {},
         }
@@ -80,7 +80,7 @@ pub const Client = struct {
         const written = fbs.pos;
         const bytes = buf[0..written];
 
-        return self.conn.write(bytes);
+        return self.conn.writeBin(bytes);
     }
 
     pub fn close(self: *Client) void {

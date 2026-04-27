@@ -26,11 +26,14 @@ pub fn loop(allocator: std.mem.Allocator) !void {
                 std.debug.print("Deinitializing lobby {}\n", .{l.id});
                 l.deinit();
                 _ = lobby.lobby_manager.lobbies.remove(l.id);
+                continue;
             }
+
+            std.debug.assert(l.players.count() > 0);
 
             var update_it = l.players.iterator();
             while (update_it.next()) |e| {
-                const p = e.value_ptr.*;
+                const p = e.value_ptr;
 
                 p.player.update(dt);
             }

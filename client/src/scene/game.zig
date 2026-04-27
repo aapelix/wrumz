@@ -57,7 +57,6 @@ pub const GameScene = struct {
                         if (player.id == id) {
                             car.pos = [_]f32{ player.x, player.y };
                             car.rotation = player.rotation;
-                            std.debug.print("Updated car {} to ({}, {}) with rotation {}\n", .{ id, player.x, player.y, player.rotation });
                             found = true;
                             break;
                         }

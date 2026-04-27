@@ -8,6 +8,8 @@ const LobbyId = u32;
 const PlayerId = u32;
 
 pub var lobby_manager: LobbyManager = undefined;
+var prng: std.Random.DefaultPrng = undefined;
+const rand = prng.random();
 
 pub fn initLobbyManager(allocator: std.mem.Allocator) void {
     lobby_manager = LobbyManager.init(allocator);
@@ -18,10 +20,10 @@ pub fn deinitLobbyManager() void {
 }
 
 const LobbyPlayer = struct {
-    player: *Player,
+    player: Player,
     client: *Client,
 
-    pub fn init(player: *Player, client: *Client) LobbyPlayer {
+    pub fn init(player: Player, client: *Client) LobbyPlayer {
         return .{
             .player = player,
             .client = client,
@@ -64,9 +66,8 @@ pub const LobbyManager = struct {
     lobbies: std.AutoHashMap(LobbyId, *Lobby),
     allocator: std.mem.Allocator,
 
-    next_id: LobbyId = 1,
-
     pub fn init(allocator: std.mem.Allocator) LobbyManager {
+        prng = std.Random.DefaultPrng.init(@intCast(std.time.milliTimestamp()));
         return .{
             .lobbies = std.AutoHashMap(LobbyId, *Lobby).init(allocator),
             .allocator = allocator,
@@ -74,8 +75,10 @@ pub const LobbyManager = struct {
     }
 
     pub fn createLobby(self: *LobbyManager) !*Lobby {
-        const id = self.next_id;
-        self.next_id += 1;
+        const id = rand.intRangeAtMost(u32, 100000, 999999);
+        if (self.lobbies.contains(id)) {
+            return self.createLobby();
+        }
 
         const lobby = try self.allocator.create(Lobby);
         lobby.* = Lobby.init(self.allocator, id);

@@ -30,12 +30,12 @@ fn onMessage(
 ) callconv(.c) c.EM_BOOL {
     _ = event_type;
     _ = user_data;
-    if (event.*.isText == true) {
-        const text = event.*.data[0 .. event.*.numBytes - 1];
-        if (on_message) |cb| {
-            cb(text);
-        }
+
+    const data = event.*.data[0..event.*.numBytes];
+    if (on_message) |cb| {
+        cb(data);
     }
+
     return true;
 }
 

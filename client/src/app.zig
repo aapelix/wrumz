@@ -9,8 +9,10 @@ const assets = @import("assets/load.zig");
 const socket = @import("net/socket.zig");
 const scene = @import("scene/type.zig");
 
+const ui = @import("ui/ui.zig");
+
 fn onWsMessage(m: Message) !void {
-    try manager.handleMsg(allocator, renderer, m);
+    try manager.handleMsg(renderer, m);
 }
 
 var window: *c.SDL_Window = undefined;
@@ -28,6 +30,10 @@ else
 
 const CANVAS_WIDTH: c_int = 320;
 const CANVAS_HEIGHT: c_int = 240;
+
+var render_scale: f32 = 1;
+var render_off_x: f32 = 0;
+var render_off_y: f32 = 0;
 
 pub fn appInit(_: ?*?*anyopaque, _: [][*:0]u8) !c.SDL_AppResult {
     if (!c.SDL_Init(c.SDL_INIT_VIDEO)) {
@@ -60,7 +66,7 @@ pub fn appInit(_: ?*?*anyopaque, _: [][*:0]u8) !c.SDL_AppResult {
 
     socket.setMessageCallback(onWsMessage);
 
-    manager = scene.SceneManager{ .current = .{ .game = try scene.GameScene.init(allocator) } };
+    manager = scene.SceneManager{ .current = .{ .join = scene.JoinScene.init() }, .allocator = allocator };
 
     return c.SDL_APP_CONTINUE;
 }
@@ -74,6 +80,23 @@ pub fn appIterate(_: ?*anyopaque) !c.SDL_AppResult {
         @as(f32, @floatFromInt(c.SDL_GetPerformanceFrequency()));
     last = now;
 
+    var w: c_int = undefined;
+    var h: c_int = undefined;
+    _ = c.SDL_GetWindowSize(window, &w, &h);
+
+    // should instead just center everything with camera and hard code scale as 4 for all screen sizes and make canvas that screen div 4
+    const scale = @min(@as(f32, @floatFromInt(w)) / CANVAS_WIDTH, @as(f32, @floatFromInt(h)) / CANVAS_HEIGHT);
+
+    const dst_w = CANVAS_WIDTH * scale;
+    const dst_h = CANVAS_HEIGHT * scale;
+
+    const x = (@as(f32, @floatFromInt(w)) - dst_w) / 2.0;
+    const y = (@as(f32, @floatFromInt(h)) - dst_h) / 2.0;
+
+    render_scale = scale;
+    render_off_x = x;
+    render_off_y = y;
+
     try manager.update(dt);
 
     _ = c.SDL_SetRenderTarget(renderer, canvas);
@@ -85,18 +108,6 @@ pub fn appIterate(_: ?*anyopaque) !c.SDL_AppResult {
     _ = c.SDL_SetRenderTarget(renderer, null);
     _ = c.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     _ = c.SDL_RenderClear(renderer);
-
-    var w: c_int = undefined;
-    var h: c_int = undefined;
-    _ = c.SDL_GetWindowSize(window, &w, &h);
-
-    const scale = @min(@as(f32, @floatFromInt(w)) / CANVAS_WIDTH, @as(f32, @floatFromInt(h)) / CANVAS_HEIGHT);
-
-    const dst_w = CANVAS_WIDTH * scale;
-    const dst_h = CANVAS_HEIGHT * scale;
-
-    const x = (@as(f32, @floatFromInt(w)) - dst_w) / 2.0;
-    const y = (@as(f32, @floatFromInt(h)) - dst_h) / 2.0;
 
     const dst_rect = c.SDL_FRect{
         .x = x,
@@ -116,16 +127,15 @@ pub fn appEvent(_: ?*anyopaque, event: *c.SDL_Event) !c.SDL_AppResult {
         return c.SDL_APP_SUCCESS;
     }
 
-    if (event.type == c.SDL_EVENT_KEY_DOWN) {
-        if (event.key.key == c.SDL_GetKeyFromName("b")) {
-            try socket.send(.{ .clientCreateLobby = .{} });
-        }
+    if (ui.mapEvent(event, render_off_x, render_off_y, render_scale)) |ev| {
+        try manager.handleEvent(ev, window);
     }
+
     return c.SDL_APP_CONTINUE;
 }
 
 pub fn appQuit(_: ?*anyopaque, _: anyerror!c.SDL_AppResult) void {
-    manager.deinit(allocator);
+    manager.deinit();
 
     c.SDL_DestroyTexture(canvas);
     c.SDL_DestroyRenderer(renderer);
