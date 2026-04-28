@@ -9,7 +9,6 @@ const lobby = @import("lobby.zig");
 const loop = @import("loop.zig");
 
 const Allocator = std.mem.Allocator;
-const PORT = 23901;
 
 var next_user_id: u32 = 1;
 
@@ -28,9 +27,12 @@ pub fn main() !void {
 
     const sim_thread = try std.Thread.spawn(.{}, loop.loop, .{allocator});
     sim_thread.detach();
-    defer sim_thread.join();
 
-    var server = try httpz.Server(Handler).init(allocator, .{ .address = .all(23901) }, Handler{});
+    const port = std.process.getEnvVarOwned(allocator, "PORT") catch "3000";
+    defer allocator.free(port);
+    const port_num = try std.fmt.parseInt(u16, port, 10);
+
+    var server = try httpz.Server(Handler).init(allocator, .{ .address = .all(port_num) }, Handler{});
     defer server.deinit();
     defer server.stop();
 
@@ -38,7 +40,7 @@ pub fn main() !void {
 
     router.get("/ws", ws, .{});
 
-    std.debug.print("running on {d}\n", .{PORT});
+    std.debug.print("running on {d}\n", .{port_num});
     try server.listen();
 }
 
