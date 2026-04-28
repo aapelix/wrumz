@@ -1,39 +1,56 @@
-name: Build Zig WASM
+name: build
 
 on:
   push:
-    branches: [ "main" ]
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Zig
-        uses: mlugg/setup-zig@v2
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v1
         with:
-          version: 0.12.0
+          version: master
 
-      - name: Install Emscripten
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+
+      - name: Cache emscripten
+        uses: actions/cache@v4
+        with:
+          path: ~/.emscripten_cache
+          key: emsdk-${{ runner.os }}
+
+      - name: Build WASM (Release)
         run: |
-          git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
-          echo "EMSDK=$PWD" >> $GITHUB_ENV
-          echo "$PWD" >> $GITHUB_PATH
+          zig build -Dtarget=wasm32-emscripten \
+                    -Doptimize=ReleaseFast \
+                    --sysroot "$(em-config CACHE)/sysroot"
 
-      - name: Build web
+      - name: Copy index.html
         run: |
-          source emsdk/emsdk_env.sh
-          cd ./client
-          bash build-web.sh
+          mkdir -p zig-out/www
+          cp index.html zig-out/www/index.html
 
-      - name: Upload build artifact
+      - name: Upload artifact (web)
         uses: actions/upload-artifact@v4
         with:
-          name: web
-          path: ./client/zig-out/www
+          name: wrumz-web
+          path: zig-out/www
+
+      - name: Build native (Release)
+        run: zig build -Doptimize=ReleaseFast
+
+      - name: Upload native binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: wrumz-native
+          path: zig-out/bin
