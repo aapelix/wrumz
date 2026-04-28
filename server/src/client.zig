@@ -44,7 +44,7 @@ pub const Client = struct {
                 try l.players.put(id, .init(p, self));
                 std.debug.print("User {} created lobby {}\n", .{ self.user_id, l.id });
 
-                try self.send(.{ .serverLobbyJoined = .{ .id = self.user_id } });
+                try self.send(.{ .serverLobbyJoined = .{ .id = self.user_id, .code = l.id } });
             },
             .clientJoinLobby => |msg| {
                 if (self.lobby != null) return;
@@ -58,7 +58,7 @@ pub const Client = struct {
                 const p = Player{ .x = 0, .y = 0, .rotation = 0 };
                 try l.players.put(self.user_id, .init(p, self));
 
-                try self.send(.{ .serverLobbyJoined = .{ .id = self.user_id } });
+                try self.send(.{ .serverLobbyJoined = .{ .id = self.user_id, .code = msg.id } });
             },
             .clientInput => |input| {
                 if (self.lobby == null) return;

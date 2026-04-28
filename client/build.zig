@@ -84,7 +84,6 @@ pub fn buildWasm(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
 
     run_emcc.addArgs(&.{
         "--use-port=sdl3",
-        "--use-port=sdl2_ttf",
         "--preload-file=assets@assets",
         "-lwebsocket.js",
     });

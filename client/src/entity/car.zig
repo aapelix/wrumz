@@ -6,7 +6,9 @@ const camera_mod = @import("../camera.zig");
 
 pub const Car = struct {
     pos: [2]f32,
+    target_pos: [2]f32,
     rotation: f32,
+    target_rotation: f32,
 
     body: stack.Stack,
     //tires: [4]stack.Stack,
@@ -17,10 +19,20 @@ pub const Car = struct {
 
         return Car{
             .pos = pos,
+            .target_pos = pos,
             .rotation = rotation,
+            .target_rotation = rotation,
             .body = body,
             //.tires = tires,
         };
+    }
+
+    pub fn update(self: *Car) void {
+        self.pos[0] += (self.target_pos[0] - self.pos[0]) * 0.2;
+        self.pos[1] += (self.target_pos[1] - self.pos[1]) * 0.2;
+
+        const rot_diff = @mod(self.target_rotation - self.rotation + 180.0, 360.0) - 180.0;
+        self.rotation += rot_diff * 0.2;
     }
 
     pub fn draw(self: *const Car, renderer: *c.SDL_Renderer, camera: camera_mod.Camera) void {

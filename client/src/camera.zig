@@ -12,7 +12,7 @@ pub const Camera = struct {
             .x = 0,
             .y = 0,
             .rotation = 0,
-            .smooth = 0.1,
+            .smooth = 0.05,
         };
     }
 
@@ -35,8 +35,8 @@ pub const Camera = struct {
         const rotated_x = translated_x * cos - translated_y * sin;
         const rotated_y = translated_x * sin + translated_y * cos;
 
-        target[0] = @floor(rotated_x + 160);
-        target[1] = @floor(rotated_y + 120);
+        target[0] = rotated_x + 160;
+        target[1] = rotated_y + 120;
         rotation.* = @floor(rotation.* - self.rotation);
     }
 };

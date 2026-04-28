@@ -5,6 +5,7 @@ const Car = @import("../entity/car.zig").Car;
 const c = @import("../c.zig").c;
 const socket = @import("../net/socket.zig");
 const camera_mod = @import("../camera.zig");
+const ui = @import("../ui/ui.zig");
 
 pub const GameScene = struct {
     camera: camera_mod.Camera,
@@ -18,20 +19,12 @@ pub const GameScene = struct {
     target_rotation: f32,
 
     user_id: u32,
+    lobby_code_label: ui.Label,
 
     pub fn init(allocator: std.mem.Allocator) !GameScene {
         const cars: std.AutoHashMap(u32, Car) = .init(allocator);
 
-        return GameScene{
-            .camera = camera_mod.Camera.init(),
-            .cars = cars,
-            .last_throttle = 0,
-            .last_steering = 0,
-            .target_x = 0,
-            .target_y = 0,
-            .target_rotation = 0,
-            .user_id = 0,
-        };
+        return GameScene{ .camera = camera_mod.Camera.init(), .cars = cars, .last_throttle = 0, .last_steering = 0, .target_x = 0, .target_y = 0, .target_rotation = 0, .user_id = 0, .lobby_code_label = ui.Label.init(.{ .text = "", .x = 10, .y = 10 }) };
     }
 
     pub fn update(self: *GameScene, dt: f32) !void {
@@ -49,6 +42,19 @@ pub const GameScene = struct {
             try socket.send(msg);
         }
 
+        var it = self.cars.iterator();
+        while (it.next()) |entry| {
+            const car = entry.value_ptr;
+            const id = entry.key_ptr.*;
+
+            car.update();
+
+            if (id == self.user_id) {
+                self.target_x = car.target_pos[0];
+                self.target_y = car.target_pos[1];
+                self.target_rotation = car.target_rotation;
+            }
+        }
         self.camera.update(self.target_x, self.target_y, self.target_rotation);
     }
 
@@ -56,6 +62,9 @@ pub const GameScene = struct {
         switch (msg) {
             .serverLobbyJoined => |joined| {
                 self.user_id = joined.id;
+                const code = try std.fmt.allocPrint(allocator, "{}", .{joined.code});
+                defer allocator.free(code);
+                self.lobby_code_label.setText(code);
             },
             .serverLobbyUpdate => |state| {
                 for (state.players) |player| {
@@ -73,15 +82,9 @@ pub const GameScene = struct {
                     var found = false;
                     for (state.players) |player| {
                         if (player.id == id) {
-                            car.pos = [_]f32{ player.x, player.y };
-                            car.rotation = player.rotation;
+                            car.target_pos = [_]f32{ player.x, player.y };
+                            car.target_rotation = player.rotation;
                             found = true;
-
-                            if (id == self.user_id) {
-                                self.target_x = player.x;
-                                self.target_y = player.y;
-                                self.target_rotation = player.rotation;
-                            }
                             break;
                         }
                     }
@@ -102,6 +105,8 @@ pub const GameScene = struct {
             const car = entry.value_ptr.*;
             car.draw(renderer, self.camera);
         }
+
+        self.lobby_code_label.draw(renderer, ui.default_theme);
     }
 
     pub fn deinit(self: *GameScene, allocator: std.mem.Allocator) void {

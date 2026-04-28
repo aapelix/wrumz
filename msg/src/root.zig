@@ -20,6 +20,7 @@ pub const ServerLobbyUpdate = struct {
 };
 pub const ServerLobbyJoined = struct {
     id: u32,
+    code: u32,
 };
 
 pub const Message = union(enum) {
