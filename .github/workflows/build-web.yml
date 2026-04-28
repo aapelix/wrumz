@@ -29,6 +29,9 @@ jobs:
           path: ~/.emscripten_cache
           key: emsdk-${{ runner.os }}
 
+      - name: Install SDL3 port
+        run: |
+          embuilder build sdl3
       - name: Build WASM (Release)
         run: |
           zig build -Dtarget=wasm32-emscripten \
@@ -45,12 +48,3 @@ jobs:
         with:
           name: wrumz-web
           path: zig-out/www
-
-      - name: Build native (Release)
-        run: zig build -Doptimize=ReleaseFast
-
-      - name: Upload native binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: wrumz-native
-          path: zig-out/bin
