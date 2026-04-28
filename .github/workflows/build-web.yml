@@ -43,8 +43,8 @@ jobs:
           mkdir -p zig-out/www
           cp index.html zig-out/www/index.html
 
-      - name: Upload artifact (web)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: wrumz-web
-          path: zig-out/www
+          path: client/zig-out/www
