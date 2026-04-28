@@ -2,6 +2,7 @@ const std = @import("std");
 
 const stack = @import("../stack.zig");
 const c = @import("../c.zig").c;
+const camera_mod = @import("../camera.zig");
 
 pub const Car = struct {
     pos: [2]f32,
@@ -22,8 +23,8 @@ pub const Car = struct {
         };
     }
 
-    pub fn draw(self: *const Car, renderer: *c.SDL_Renderer) void {
-        self.body.draw(renderer, self.pos, self.rotation);
+    pub fn draw(self: *const Car, renderer: *c.SDL_Renderer, camera: camera_mod.Camera) void {
+        self.body.draw(renderer, self.pos, self.rotation, camera);
         //self.tires.draw(renderer, [self.x, self.y], self.rotation);
     }
 

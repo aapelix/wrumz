@@ -18,12 +18,16 @@ pub const ServerPlayer = struct {
 pub const ServerLobbyUpdate = struct {
     players: []const ServerPlayer,
 };
+pub const ServerLobbyJoined = struct {
+    id: u32,
+};
 
 pub const Message = union(enum) {
     clientJoinLobby: ClientJoinLobby,
     clientCreateLobby: ClientCreateLobby,
     serverLobbyUpdate: ServerLobbyUpdate,
     clientInput: ClientInput,
+    serverLobbyJoined: ServerLobbyJoined,
 
     pub fn encode(msg: Message, writer: anytype) !void {
         try writer.writeByte(@intFromEnum(msg));
@@ -50,6 +54,9 @@ pub const Message = union(enum) {
             },
             .serverLobbyUpdate => Message{
                 .serverLobbyUpdate = try decodeValue(allocator, reader, ServerLobbyUpdate),
+            },
+            .serverLobbyJoined => Message{
+                .serverLobbyJoined = try decodeValue(allocator, reader, ServerLobbyJoined),
             },
         };
     }

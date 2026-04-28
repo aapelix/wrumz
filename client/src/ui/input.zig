@@ -3,6 +3,7 @@ const c = @import("../c.zig").c;
 const theme_mod = @import("theme.zig");
 const draw_mod = @import("draw.zig");
 const event_mod = @import("event.zig");
+const slice_mod = @import("slice.zig");
 
 const Theme = theme_mod.Theme;
 const UiEvent = event_mod.UiEvent;
@@ -184,53 +185,44 @@ pub const Input = struct {
     }
 
     pub fn draw(self: *const Input, renderer: *c.SDL_Renderer, t: Theme, blink_on: bool) void {
-        const bp: f32 = @floatFromInt(t.border_px);
+        if (t.btn_primary) |ns| {
+            draw_mod.drawNineSlice(renderer, ns, self.x, self.y, self.w, self.h);
 
-        const bg = if (self.disabled) t.bg_dark else t.bg_dark;
-        draw_mod.fillRect(renderer, self.x, self.y, self.w, self.h, bg);
+            const cx = self.x + @as(f32, @floatFromInt(ns.left)) + 2;
+            const cy = self.y + @divTrunc(self.h - draw_mod.textHeight(t.font_scale), 2);
 
-        const border = if (self.disabled)
-            t.border
-        else if (self.focused)
-            t.border_focus
-        else
-            t.border;
-        draw_mod.drawRect(renderer, self.x, self.y, self.w, self.h, bp, border);
-
-        const cx = self.x + bp + 2;
-        const cy = self.y + @divTrunc(self.h - draw_mod.textHeight(t.font_scale), 2);
-
-        if (self.len == 0 and !self.focused) {
-            if (self.placeholder_len > 0) {
-                draw_mod.drawText(
-                    renderer,
-                    cx,
-                    cy,
-                    self.placeholder_buf[0..self.placeholder_len :0].ptr,
-                    t.text_disabled,
-                    t.font_scale,
-                );
-            }
-        } else {
-            var disp: [64]u8 = undefined;
-            if (self.password) {
-                var i: usize = 0;
-                while (i < self.len) : (i += 1) disp[i] = 0xb7; // middle dot
-                disp[self.len] = 0;
+            if (self.len == 0 and !self.focused) {
+                if (self.placeholder_len > 0) {
+                    draw_mod.drawText(
+                        renderer,
+                        cx,
+                        cy,
+                        self.placeholder_buf[0..self.placeholder_len :0].ptr,
+                        t.text_disabled,
+                        t.font_scale,
+                    );
+                }
             } else {
-                @memcpy(disp[0..self.len], self.buf[0..self.len]);
-                disp[self.len] = 0;
+                var disp: [64]u8 = undefined;
+                if (self.password) {
+                    var i: usize = 0;
+                    while (i < self.len) : (i += 1) disp[i] = 0xb7; // middle dot
+                    disp[self.len] = 0;
+                } else {
+                    @memcpy(disp[0..self.len], self.buf[0..self.len]);
+                    disp[self.len] = 0;
+                }
+
+                const tc = if (self.disabled) t.text_disabled else t.text;
+                draw_mod.drawText(renderer, cx, cy, disp[0..self.len :0].ptr, tc, t.font_scale);
             }
 
-            const tc = if (self.disabled) t.text_disabled else t.text;
-            draw_mod.drawText(renderer, cx, cy, disp[0..self.len :0].ptr, tc, t.font_scale);
-        }
-
-        if (self.focused and blink_on) {
-            const glyph_w: f32 = 8 * @as(f32, @floatFromInt(t.font_scale));
-            const cur_x = cx + @as(f32, @floatFromInt(self.cursor)) * glyph_w;
-            const cur_h = draw_mod.textHeight(t.font_scale);
-            draw_mod.fillRect(renderer, cur_x, cy, 1, cur_h, t.cursor);
+            if (self.focused and blink_on) {
+                const glyph_w: f32 = 8 * @as(f32, @floatFromInt(t.font_scale));
+                const cur_x = cx + @as(f32, @floatFromInt(self.cursor)) * glyph_w;
+                const cur_h = draw_mod.textHeight(t.font_scale);
+                draw_mod.fillRect(renderer, cur_x, cy, 1, cur_h, t.cursor);
+            }
         }
     }
 };

@@ -1,5 +1,6 @@
 const c = @import("../c.zig").c;
 const theme = @import("theme.zig");
+const slice_mod = @import("slice.zig");
 const Color = theme.Color;
 
 pub fn fillRect(renderer: *c.SDL_Renderer, x: f32, y: f32, w: f32, h: f32, col: Color) void {
@@ -49,3 +50,5 @@ pub fn drawTextSlice(renderer: *c.SDL_Renderer, x: i32, y: i32, text: []const u8
     buf[len] = 0;
     drawText(renderer, x, y, buf[0..len :0].ptr, col, font_scale);
 }
+
+pub const drawNineSlice = slice_mod.drawNineSlice;

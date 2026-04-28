@@ -50,7 +50,7 @@ pub const Scene = union(enum) {
     pub fn deinit(self: *Scene, allocator: std.mem.Allocator) void {
         switch (self.*) {
             .game => |*g| g.deinit(allocator),
-            else => {},
+            .join => |*j| j.deinit(),
         }
     }
 };

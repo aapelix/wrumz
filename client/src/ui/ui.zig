@@ -21,6 +21,9 @@ const label_mod = @import("label.zig");
 pub const Label = label_mod.Label;
 pub const LabelConfig = label_mod.LabelConfig;
 
+const slice_mod = @import("slice.zig");
+pub const NineSlice = slice_mod.NineSlice;
+
 pub const draw = @import("draw.zig");
 
 const c = @import("../c.zig").c;

@@ -66,7 +66,7 @@ pub fn appInit(_: ?*?*anyopaque, _: [][*:0]u8) !c.SDL_AppResult {
 
     socket.setMessageCallback(onWsMessage);
 
-    manager = scene.SceneManager{ .current = .{ .join = scene.JoinScene.init() }, .allocator = allocator };
+    manager = scene.SceneManager{ .current = .{ .join = try scene.JoinScene.init(renderer) }, .allocator = allocator };
 
     return c.SDL_APP_CONTINUE;
 }

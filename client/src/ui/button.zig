@@ -1,6 +1,7 @@
 const c = @import("../c.zig").c;
 const theme_mod = @import("theme.zig");
 const draw_mod = @import("draw.zig");
+const slice_mod = @import("slice.zig");
 const event_mod = @import("event.zig");
 
 const std = @import("std");
@@ -14,8 +15,6 @@ pub const ButtonResult = enum { none, clicked };
 
 pub const ButtonStyle = enum {
     primary,
-    ghost,
-    danger,
 };
 
 pub const ButtonConfig = struct {
@@ -101,61 +100,29 @@ pub const Button = struct {
     }
 
     pub fn draw(self: *const Button, renderer: *c.SDL_Renderer, t: Theme) void {
-        const bp: f32 = @floatFromInt(t.border_px);
-
-        const bg_col: theme_mod.Color = switch (self.style) {
-            .primary => switch (self.state) {
-                .normal => t.accent,
-                .hovered => t.accent_hover,
-                .pressed => t.accent_press,
-                .disabled => t.bg_dark,
-            },
-            .ghost => t.bg,
-            .danger => switch (self.state) {
-                .normal => .{ .r = 0xaa, .g = 0x33, .b = 0x33, .a = 255 },
-                .hovered => .{ .r = 0xdd, .g = 0x44, .b = 0x44, .a = 255 },
-                .pressed => .{ .r = 0x88, .g = 0x22, .b = 0x22, .a = 255 },
-                .disabled => t.bg_dark,
-            },
-        };
-
-        const border_col: theme_mod.Color = switch (self.style) {
-            .primary => switch (self.state) {
-                .normal => t.accent_hover,
-                .hovered => t.accent_hover,
-                .pressed => t.accent,
-                .disabled => t.border,
-            },
-            .ghost => switch (self.state) {
-                .normal => t.border,
-                .hovered => t.border_focus,
-                .pressed => t.accent,
-                .disabled => t.border,
-            },
-            .danger => switch (self.state) {
-                .normal => .{ .r = 0xcc, .g = 0x44, .b = 0x44, .a = 255 },
-                .hovered => .{ .r = 0xff, .g = 0x66, .b = 0x66, .a = 255 },
-                .pressed => .{ .r = 0x88, .g = 0x22, .b = 0x22, .a = 255 },
-                .disabled => t.border,
-            },
-        };
-
         const text_col = if (self.state == .disabled) t.text_disabled else t.text;
 
-        const ox: f32 = if (self.state == .pressed) 1 else 0;
-        const oy: f32 = if (self.state == .pressed) 1 else 0;
+        const oy: f32 = switch (self.state) {
+            .normal => 0,
+            .hovered => -1,
+            .pressed => 1,
+            .disabled => 0,
+        };
 
-        draw_mod.fillRect(renderer, self.x + ox, self.y + oy, self.w, self.h, bg_col);
-        draw_mod.drawRect(renderer, self.x + ox, self.y + oy, self.w, self.h, bp, border_col);
+        const oh = -oy;
+
+        const maybe_slice: ?slice_mod.NineSlice = switch (self.style) {
+            .primary => t.btn_primary,
+        };
+
+        if (maybe_slice) |ns| {
+            draw_mod.drawNineSlice(renderer, ns, self.x, self.y + oy, self.w, self.h + oh);
+        }
 
         const tw = draw_mod.textWidth(self.label_buf[0..self.label_len], t.font_scale);
         const th = draw_mod.textHeight(t.font_scale);
-        const tx = self.x + ox + @divTrunc(self.w - tw, 2);
+        const tx = self.x + @divTrunc(self.w - tw, 2);
         const ty = self.y + oy + @divTrunc(self.h - th, 2);
         draw_mod.drawText(renderer, tx, ty, self.label_buf[0..self.label_len :0].ptr, text_col, t.font_scale);
-
-        if (self.style == .ghost and self.state == .hovered) {
-            draw_mod.hline(renderer, self.x + ox + 2, self.y + oy + self.h - 2, self.w - 4, t.border_focus);
-        }
     }
 };
