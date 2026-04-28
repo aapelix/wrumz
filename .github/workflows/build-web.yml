@@ -29,10 +29,10 @@ jobs:
       - name: Build web
         run: |
           source emsdk/emsdk_env.sh
-          ./build-web.sh
+          ./client/build-web.sh
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: web
-          path: zig-out/www
+          path: ./client/zig-out/www
