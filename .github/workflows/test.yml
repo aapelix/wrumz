@@ -15,7 +15,7 @@ jobs:
       - name: Install Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: 0.12.0
+          version: 0.15.6
         
       - name: Build and test msg
         working-directory: ./msg
@@ -26,7 +26,7 @@ jobs:
         working-directory: ./server
         run: |
           zig build test
-          
+
       - name: Build and test client
         working-directory: ./client
         run: |
