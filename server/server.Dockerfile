@@ -1,6 +1,6 @@
 FROM alpine:3.19
 
-RUN apk add --no-cache curl tar \
+RUN apk add --no-cache curl tar xz \
  && curl -L https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz \
  | tar -xJ \
  && mv zig-x86_64-linux-0.15.2 /zig
