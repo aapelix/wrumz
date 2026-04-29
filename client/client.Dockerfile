@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y curl xz-utils \
 ENV PATH="/opt/zig:${PATH}"
 
 WORKDIR /app
+COPY msg ./msg
 COPY client ./client
 WORKDIR /app/client
 
