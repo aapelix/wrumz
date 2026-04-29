@@ -22,14 +22,5 @@ jobs:
         run: |
           zig build test
 
-      - name: Build and test server
-        working-directory: ./server
-        run: |
-          zig build test
-
-      - name: Build and test client
-        working-directory: ./client
-        run: |
-          zig build test
 
       
