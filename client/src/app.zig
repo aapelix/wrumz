@@ -62,13 +62,7 @@ pub fn appInit(_: ?*?*anyopaque, _: [][*:0]u8) !c.SDL_AppResult {
 
     last = c.SDL_GetPerformanceCounter();
 
-    var env_map = try std.process.getEnvMap(allocator);
-    defer env_map.deinit();
-
-    const address = env_map.get("ADDRESS") orelse "127.0.0.1";
-    const port = env_map.get("PORT") orelse "23901";
-
-    try socket.init(address, try std.fmt.parseInt(u16, port, 10), "/ws", "ws");
+    try socket.init();
 
     socket.setMessageCallback(onWsMessage);
 

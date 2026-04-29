@@ -35,17 +35,11 @@ pub fn setMessageCallback(cb: MessageCallback) void {
     sock.setMessageCallback(onMessage);
 }
 
-pub fn init(address: []const u8, port: c_int, path: []const u8, protocol: []const u8) !void {
+pub fn init() !void {
     if (builtin.os.tag == .emscripten) {
-        var buf: [1024]u8 = undefined;
-        const url = try std.fmt.bufPrintZ(
-            &buf,
-            "{s}://{s}:{d}{s}",
-            .{ protocol, address, port, path },
-        );
-        sock.init(url);
+        sock.init("wss://wrum-server.aapelix.dev", 443, "/ws");
     } else {
-        sock.init(@ptrCast(address), port, @ptrCast(path));
+        sock.init("ws://wrum-server.aapelix.dev", 443, "/ws");
     }
 }
 
