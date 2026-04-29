@@ -140,3 +140,89 @@ fn decodeValue(allocator: std.mem.Allocator, reader: anytype, comptime T: type) 
         else => @compileError("unsupported type"),
     }
 }
+
+const testing = std.testing;
+
+test "ClientJoinLobby encode/decode" {
+    var buf: [256]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buf);
+
+    const msg = Message{ .clientJoinLobby = .{ .id = 123 } };
+    try msg.encode(fbs.writer());
+
+    var read = std.io.fixedBufferStream(buf[0..fbs.pos]);
+    const decoded = try Message.decode(testing.allocator, read.reader());
+
+    try testing.expectEqual(@as(u32, 123), decoded.clientJoinLobby.id);
+}
+
+test "ClientCreateLobby encode/decode" {
+    var buf: [256]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buf);
+
+    const msg = Message{ .clientCreateLobby = .{} };
+    try msg.encode(fbs.writer());
+
+    var read = std.io.fixedBufferStream(buf[0..fbs.pos]);
+    const decoded = try Message.decode(testing.allocator, read.reader());
+
+    _ = decoded.clientCreateLobby;
+}
+
+test "ClientInput encode/decode" {
+    var buf: [256]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buf);
+
+    const msg = Message{ .clientInput = .{ .throttle = 10, .steering = -5 } };
+    try msg.encode(fbs.writer());
+
+    var read = std.io.fixedBufferStream(buf[0..fbs.pos]);
+    const decoded = try Message.decode(testing.allocator, read.reader());
+
+    try testing.expectEqual(@as(i8, 10), decoded.clientInput.throttle);
+    try testing.expectEqual(@as(i8, -5), decoded.clientInput.steering);
+}
+
+test "ServerLobbyJoined encode/decode" {
+    var buf: [256]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buf);
+
+    const msg = Message{
+        .serverLobbyJoined = .{ .id = 42, .code = 9999 },
+    };
+    try msg.encode(fbs.writer());
+
+    var read = std.io.fixedBufferStream(buf[0..fbs.pos]);
+    const decoded = try Message.decode(testing.allocator, read.reader());
+
+    try testing.expectEqual(@as(u32, 42), decoded.serverLobbyJoined.id);
+    try testing.expectEqual(@as(u32, 9999), decoded.serverLobbyJoined.code);
+}
+
+test "ServerLobbyUpdate encode/decode" {
+    var buf: [512]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buf);
+
+    const players = [_]ServerPlayer{
+        .{ .id = 1, .x = 1.5, .y = 2.5, .rotation = 0.1 },
+        .{ .id = 2, .x = 3.5, .y = 4.5, .rotation = 0.2 },
+    };
+
+    const msg = Message{
+        .serverLobbyUpdate = .{ .players = players[0..] },
+    };
+
+    try msg.encode(fbs.writer());
+
+    var read = std.io.fixedBufferStream(buf[0..fbs.pos]);
+    const decoded = try Message.decode(testing.allocator, read.reader());
+    defer testing.allocator.free(decoded.serverLobbyUpdate.players);
+
+    try testing.expectEqual(@as(usize, 2), decoded.serverLobbyUpdate.players.len);
+
+    try testing.expectEqual(@as(u32, 1), decoded.serverLobbyUpdate.players[0].id);
+    try testing.expectEqual(@as(f32, 1.5), decoded.serverLobbyUpdate.players[0].x);
+
+    try testing.expectEqual(@as(u32, 2), decoded.serverLobbyUpdate.players[1].id);
+    try testing.expectEqual(@as(f32, 4.5), decoded.serverLobbyUpdate.players[1].y);
+}
