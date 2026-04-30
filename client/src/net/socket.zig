@@ -39,7 +39,7 @@ pub fn init() !void {
     if (builtin.os.tag == .emscripten) {
         sock.init("wss://wrum-server.aapelix.dev/ws");
     } else {
-        sock.init("ws://wrum-server.aapelix.dev", 443, "/ws");
+        sock.init("127.0.0.1", 3000, "/ws");
     }
 }
 

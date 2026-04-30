@@ -6,10 +6,12 @@ const c = @import("../c.zig").c;
 const socket = @import("../net/socket.zig");
 const camera_mod = @import("../camera.zig");
 const ui = @import("../ui/ui.zig");
+const map_mod = @import("../map/load.zig");
 
 pub const GameScene = struct {
     camera: camera_mod.Camera,
     cars: std.AutoHashMap(u32, Car),
+    map: ?map_mod.Map,
 
     last_throttle: i8,
     last_steering: i8,
@@ -24,7 +26,7 @@ pub const GameScene = struct {
     pub fn init(allocator: std.mem.Allocator) !GameScene {
         const cars: std.AutoHashMap(u32, Car) = .init(allocator);
 
-        return GameScene{ .camera = camera_mod.Camera.init(), .cars = cars, .last_throttle = 0, .last_steering = 0, .target_x = 0, .target_y = 0, .target_rotation = 0, .user_id = 0, .lobby_code_label = ui.Label.init(.{ .text = "", .x = 10, .y = 10 }) };
+        return GameScene{ .camera = camera_mod.Camera.init(), .cars = cars, .map = null, .last_throttle = 0, .last_steering = 0, .target_x = 0, .target_y = 0, .target_rotation = 0, .user_id = 0, .lobby_code_label = ui.Label.init(.{ .text = "", .x = 10, .y = 10 }) };
     }
 
     pub fn update(self: *GameScene, dt: f32) !void {
@@ -65,6 +67,10 @@ pub const GameScene = struct {
                 const code = try std.fmt.allocPrint(allocator, "{}", .{joined.code});
                 defer allocator.free(code);
                 self.lobby_code_label.setText(code);
+
+                if (self.map == null) {
+                    self.map = try map_mod.Map.load(allocator, renderer, "assets/maps/test.tmj");
+                }
             },
             .serverLobbyUpdate => |state| {
                 for (state.players) |player| {
@@ -100,6 +106,10 @@ pub const GameScene = struct {
     }
 
     pub fn draw(self: *GameScene, renderer: *c.SDL_Renderer) void {
+        if (self.map) |*m| {
+            m.draw(renderer, self.camera);
+        }
+
         var it = self.cars.iterator();
         while (it.next()) |entry| {
             const car = entry.value_ptr.*;
@@ -116,5 +126,8 @@ pub const GameScene = struct {
             car.deinit(allocator);
         }
         self.cars.deinit();
+        if (self.map) |*m| {
+            m.deinit(allocator);
+        }
     }
 };
