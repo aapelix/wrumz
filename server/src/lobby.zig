@@ -4,6 +4,8 @@ const Message = @import("msg").Message;
 const Client = @import("client.zig").Client;
 const Player = @import("player.zig").Player;
 
+const msg_mod = @import("msg");
+
 const LobbyId = u32;
 const PlayerId = u32;
 
@@ -35,12 +37,14 @@ pub const Lobby = struct {
     id: LobbyId,
     players: std.AutoHashMap(PlayerId, LobbyPlayer),
     allocator: std.mem.Allocator,
+    snapshot_buffer: std.ArrayList(msg_mod.ServerPlayer),
 
     pub fn init(allocator: std.mem.Allocator, id: LobbyId) Lobby {
         return .{
             .id = id,
             .players = std.AutoHashMap(PlayerId, LobbyPlayer).init(allocator),
             .allocator = allocator,
+            .snapshot_buffer = .empty,
         };
     }
 

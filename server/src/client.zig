@@ -66,6 +66,8 @@ pub const Client = struct {
                 lobby.lobby_manager.lock.lock();
                 defer lobby.lobby_manager.lock.unlock();
 
+                std.debug.print("input {}, {}", .{ input.steering, input.throttle });
+
                 const l = self.lobby.?;
                 var player = l.players.getPtr(self.user_id) orelse return;
                 player.player.throttle = input.throttle;
